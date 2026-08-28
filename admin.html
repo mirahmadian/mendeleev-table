@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل مدیریت آهنگ‌ها | عنصریاب</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazir-font@30.1.0/dist/font-face.css">
+<style>
+  :root{--ink:#182536;--muted:#64748b;--paper:#f8fbff;--card:#fff;--accent:#7655d7;--accent-dark:#5637b5;--line:#dbe4ef;--ok:#16834a;--err:#c34242}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:Vazir,Tahoma,Arial,sans-serif}
+  main{max-width:640px;margin:auto;padding:28px 20px 60px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px}
+  label{display:block;font-size:13px;font-weight:bold;margin-bottom:6px}
+  input[type=text],input[type=password]{width:100%;font:inherit;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px;background:#fff;color:var(--ink)}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+  .checkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:14px}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  .drop.hover{border-color:var(--accent);color:var(--accent)}
+  input[type=file]{display:none}
+  button{font:inherit;border:0;border-radius:12px;padding:12px 18px;cursor:pointer;background:var(--accent);color:#fff;font-weight:bold;width:100%;margin-top:14px;transition:.15s}
+  button:hover{filter:brightness(.95)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .list{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f6f4ff;border-radius:10px;padding:9px 13px;font-size:13px}
+  .status{font-weight:bold;font-size:12px}
+  .status.pending{color:var(--muted)}
+  .status.ok{color:var(--ok)}
+  .status.err{color:var(--err)}
+  .hint{font-size:12px;color:var(--muted);line-height:1.9;margin-top:6px}
+  a{color:var(--accent-dark)}
+</style>
+</head>
+<body>
+<main>
+  <h1>🎵 پنل مدیریت آهنگ‌های پاداش</h1>
+  <div class="sub">فایل صوتی را با هر اسمی که هست انتخاب کن — به‌صورت خودکار در برنامه به‌صورت تصادفی پخش می‌شود.</div>
+
+  <div class="card">
+    <label>نام کاربری گیت‌هاب (owner)</label>
+    <input type="text" id="owner" placeholder="مثلاً yourname">
+    <label>نام مخزن (repository)</label>
+    <input type="text" id="repo" placeholder="مثلاً onsoryab">
+    <div class="row">
+      <div>
+        <label>شاخه (branch)</label>
+        <input type="text" id="branch" value="main">
+      </div>
+      <div>
+        <label>مسیر پوشهٔ آهنگ‌ها</label>
+        <input type="text" id="path" value="songs">
+      </div>
+    </div>
+    <label>توکن دسترسی گیت‌هاب (Personal Access Token)</label>
+    <input type="password" id="token" placeholder="ghp_xxx یا github_pat_xxx">
+    <div class="checkline"><input type="checkbox" id="remember"> <span>این اطلاعات را فقط در همین مرورگر ذخیره کن</span></div>
+    <div class="hint">
+      توکن باید فقط دسترسی «Contents: Read and write» روی همین یک مخزن داشته باشد (از GitHub → Settings → Developer settings → Fine-grained tokens بسازید).<br>
+      توکن هرگز به جایی جز GitHub فرستاده نمی‌شود و در کد این صفحه هم ذخیره نمی‌شود.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="drop" id="drop">فایل‌های صوتی را اینجا رها کن، یا برای انتخاب کلیک کن</div>
+    <input type="file" id="fileInput" accept="audio/*" multiple>
+    <div class="list" id="list"></div>
+    <button id="uploadBtn" disabled>آپلود روی گیت‌هاب</button>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const owner=$('#owner'), repo=$('#repo'), branch=$('#branch'), path=$('#path'), token=$('#token'), remember=$('#remember');
+
+// پیش‌فرض‌ها را از localStorage یا از آدرس همین صفحه (اگر روی GitHub Pages باشد) بردار
+(function prefill(){
+  const saved = JSON.parse(localStorage.getItem('onsoryab_admin')||'{}');
+  if(saved.owner) owner.value=saved.owner;
+  if(saved.repo) repo.value=saved.repo;
+  if(saved.branch) branch.value=saved.branch;
+  if(saved.path) path.value=saved.path;
+  if(saved.token){ token.value=saved.token; remember.checked=true; }
+  if(!owner.value || !repo.value){
+    const host=location.hostname, parts=location.pathname.split('/').filter(Boolean);
+    if(host.endsWith('.github.io')){
+      if(!owner.value) owner.value = host.split('.')[0];
+      if(!repo.value) repo.value = parts.length ? parts[0] : `${host.split('.')[0]}.github.io`;
+    }
+  }
+})();
+
+function persistIfNeeded(){
+  if(remember.checked){
+    localStorage.setItem('onsoryab_admin', JSON.stringify({owner:owner.value,repo:repo.value,branch:branch.value,path:path.value,token:token.value}));
+  } else {
+    localStorage.removeItem('onsoryab_admin');
+  }
+}
+
+let files = [];
+const drop=$('#drop'), fileInput=$('#fileInput'), list=$('#list'), uploadBtn=$('#uploadBtn');
+
+drop.onclick=()=>fileInput.click();
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hover')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hover')}));
+drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+fileInput.addEventListener('change',e=>addFiles(e.target.files));
+
+function addFiles(fl){
+  for(const f of fl) files.push({file:f, status:'pending', msg:'در صف'});
+  renderList();
+}
+
+function renderList(){
+  list.innerHTML='';
+  files.forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.className='item';
+    row.innerHTML=`<span>${item.file.name}</span><span class="status ${item.status}" id="st-${i}">${item.msg}</span>`;
+    list.append(row);
+  });
+  uploadBtn.disabled = files.length===0;
+}
+
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('خواندن فایل ناموفق بود'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function uploadOne(item, idx){
+  const st = document.querySelector(`#st-${idx}`);
+  const safeName = item.file.name.replace(/[^\w.\-]+/g,'-');
+  const apiUrl = `https://api.github.com/repos/${owner.value}/${repo.value}/contents/${path.value}/${safeName}`;
+  st.textContent='در حال آپلود...'; st.className='status pending';
+  try{
+    const base64 = await fileToBase64(item.file);
+    // اگر فایل هم‌نامی از قبل هست، sha آن را بگیر تا به‌روزرسانی شود نه خطا
+    let sha;
+    try{
+      const head = await fetch(apiUrl+`?ref=${branch.value}`, {headers:{Authorization:`Bearer ${token.value}`}});
+      if(head.ok){ const j = await head.json(); sha = j.sha; }
+    }catch(e){}
+    const res = await fetch(apiUrl, {
+      method:'PUT',
+      headers:{Authorization:`Bearer ${token.value}`,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message: `افزودن آهنگ ${safeName}`,
+        content: base64,
+        branch: branch.value,
+        ...(sha ? {sha} : {})
+      })
+    });
+    if(!res.ok){
+      const j = await res.json().catch(()=>({}));
+      throw new Error(j.message || `خطای ${res.status}`);
+    }
+    st.textContent='✔ آپلود شد'; st.className='status ok';
+  }catch(err){
+    st.textContent='✖ '+err.message; st.className='status err';
+  }
+}
+
+uploadBtn.onclick = async ()=>{
+  if(!owner.value||!repo.value||!token.value){ alert('نام کاربری، نام مخزن و توکن را پر کن.'); return; }
+  persistIfNeeded();
+  uploadBtn.disabled = true;
+  for(let i=0;i<files.length;i++){ await uploadOne(files[i], i); }
+  uploadBtn.disabled = false;
+  files = [];
+  setTimeout(()=>{ list.innerHTML=''; }, 4000);
+};
+</script>
+</body>
+</html>

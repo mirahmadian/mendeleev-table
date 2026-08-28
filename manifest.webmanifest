@@ -1,0 +1,21 @@
+{
+  "name": "عنصریاب - بازی جدول تناوبی",
+  "short_name": "عنصریاب",
+  "description": "بازی آموزشی جدول تناوبی همراه با موسیقی پاداش",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fbff",
+  "theme_color": "#7655d7",
+  "dir": "rtl",
+  "lang": "fa",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

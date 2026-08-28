@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>عنصریاب | بازی جدول تناوبی</title>
+  <meta name="theme-color" content="#7655d7">
+  <meta name="description" content="عنصریاب؛ بازی آموزشی جدول تناوبی برای یادگیری عناصر با بازی و موسیقی">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazir-font@30.1.0/dist/font-face.css">
+  <style>
+    :root {
+      --ink:#182536; --muted:#64748b; --paper:#f8fbff; --card:#fff;
+      --pink:#ffd7d1; --blue:#c9e4ff; --yellow:#fff9b7; --green:#caffbf;
+      --accent:#7655d7; --accent-dark:#5637b5; --line:#dbe4ef;
+    }
+    * { box-sizing:border-box }
+    body { margin:0; color:var(--ink); font-family:Vazir,Tahoma,Arial,sans-serif; background:
+      radial-gradient(circle at 10% 0%,#efe8ff 0,transparent 32rem),var(--paper); }
+    header { max-width:1240px; margin:auto; padding:28px 22px 16px; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+    .brand { display:flex; align-items:center; gap:14px }
+    .logo { width:52px;height:52px;border-radius:17px;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:27px;box-shadow:0 8px 20px #7655d744 }
+    h1 { margin:0;font-size:clamp(21px,3vw,32px) } .tagline{color:var(--muted);font-size:13px;margin-top:5px}
+    .score { background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 18px;text-align:center;min-width:108px }
+    .score strong{display:block;color:var(--accent);font-size:24px}.score small{color:var(--muted)}
+    main{max-width:1240px;margin:auto;padding:0 22px 44px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px;margin:10px 0 18px}
+    button,.select{font:inherit;border:0;border-radius:12px;padding:11px 15px;cursor:pointer;transition:.18s}
+    button{background:#edf0f7;color:var(--ink)} button:hover{transform:translateY(-1px);filter:brightness(.97)}
+    button.active,button.primary{background:var(--accent);color:#fff}.select{border:1px solid var(--line);background:#fff;color:var(--ink)}
+    .hint{margin-right:auto;color:var(--muted);font-size:13px}
+    .table-wrap{background:#fff;border:1px solid var(--line);border-radius:24px;padding:22px;overflow-x:auto;box-shadow:0 14px 35px #263b5c0b}
+    .periodic{direction:ltr;display:grid;grid-template-columns:38px repeat(18,minmax(53px,1fr));gap:6px;min-width:1100px}
+    .corner-label{grid-column:1;grid-row:1/3;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;font-size:13px;font-weight:bold;color:var(--ink);line-height:1.5}
+    .corner-label .arrow-right{margin-right:4px}
+    .group{font-weight:bold;text-align:center;color:var(--ink);font-size:15px;padding-bottom:3px;align-self:end}.period{display:flex;justify-content:flex-end;align-items:center;color:var(--ink);font-weight:bold;font-size:15px;padding-right:4px}
+    .element{height:60px;border:1.5px solid #000;border-radius:0;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;transition:.18s}
+    .element:hover,.element:focus{transform:scale(1.08);z-index:4;box-shadow:0 8px 18px #263b5c44;outline:3px solid #fff}
+    .element{gap:0}.element .number{font-size:15px;line-height:1.3}.element .symbol{font:26px Georgia,serif;line-height:1.2}.element .name{display:none}
+    .element.face-down{background:#7655d7;color:#fff;border-color:#5637b5}.element.face-down>*{display:none}.element.face-down::after{content:'؟';font-size:26px;font-weight:bold}.element.wrong{background:#ef7777!important;color:#fff;border-color:#b52f3b}
+    .pink{background:var(--pink)}.blue{background:var(--blue)}.yellow{background:var(--yellow)}.green{background:var(--green)}
+    .placeholder{height:60px;display:grid;place-items:center;color:var(--ink);font-size:18px;border:none}
+    .lanthanide{margin-top:18px}.series-label{grid-column:1;text-align:center;color:var(--ink);font-size:18px;align-self:center}
+    .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:20px;color:var(--muted);font-size:12px;justify-content:center}.legend span{display:flex;align-items:center;gap:6px}.dot{width:13px;height:13px;border:1px solid #78869a;display:inline-block}
+    .panel{margin-top:20px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;display:none}.panel.show{display:block}
+    .panel h2{font-size:18px;margin:0 0 8px}.panel p{color:var(--muted);font-size:13px}.quiz{display:flex;align-items:center;justify-content:center;gap:15px;flex-wrap:wrap;padding:12px}
+    .question{font-size:19px;font-weight:bold}.answer-box{min-width:125px;min-height:58px;border:2px dashed var(--accent);border-radius:14px;padding:10px;text-align:center;display:grid;place-items:center;color:var(--muted)}
+    .choices{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}.choice{background:#f0ebff;color:var(--accent-dark);font-weight:bold}.feedback{text-align:center;min-height:25px;font-weight:bold}.success{color:#16834a}.error{color:#c34242}
+    .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);background:#182536;color:#fff;border-radius:14px;padding:13px 20px;opacity:0;transition:.25s;z-index:10}.toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:650px){header{align-items:flex-start}.score{min-width:78px;padding:8px}.table-wrap{padding:12px}main{padding:0 10px 30px}.hint{width:100%;margin:0}}
+  </style>
+</head>
+<body>
+  <header><div class="brand"><div class="logo">⚗</div><div><h1>عنصریاب</h1><div class="tagline">یادگیری جدول تناوبی با بازی و موسیقی</div></div></div><div class="score"><strong id="score">۰</strong><small>امتیاز</small></div></header>
+  <main>
+    <div class="toolbar">
+      <button class="active" data-mode="explore">کاوش جدول</button><button data-mode="finder">عنصریاب</button><button data-mode="guess">جای عنصر</button>
+      <select class="select" id="singer" aria-label="انتخاب صدای پاداش"><option value="taylor">حال‌وهوای پاپ</option><option value="adele">حال‌وهوای سول</option><option value="star">صدای ستاره‌ای</option></select>
+      <button id="sound">🔊 صدای پاداش: روشن</button><span class="hint">روی هر خانه بروید تا اطلاعات عنصر را ببینید</span>
+    </div>
+    <section class="table-wrap"><div class="periodic" id="table"></div><div class="legend"><span><i class="dot pink"></i>فلز قلیایی</span><span><i class="dot blue"></i>فلز واسطه</span><span><i class="dot yellow"></i>نافلز و شبه‌فلز</span><span><i class="dot green"></i>لانتانید و اکتینید</span></div></section>
+    <section class="panel" id="panel"><h2 id="panel-title"></h2><p id="panel-desc"></p><div id="game"></div></section>
+  </main>
+  <div class="toast" id="toast"></div>
+  <script>
+    const raw=`H هیدروژن 1 1 pink|He هلیم 2 1 pink|Li لیتیوم 3 1 pink|Be بریلیم 4 2 pink|B بور 5 13 yellow|C کربن 6 14 yellow|N نیتروژن 7 15 yellow|O اکسیژن 8 16 yellow|F فلوئور 9 17 yellow|Ne نئون 10 18 yellow|Na سدیم 11 1 pink|Mg منیزیم 12 2 pink|Al آلومینیوم 13 13 yellow|Si سیلیسیم 14 14 yellow|P فسفر 15 15 yellow|S گوگرد 16 16 yellow|Cl کلر 17 17 yellow|Ar آرگون 18 18 yellow|K پتاسیم 19 1 pink|Ca کلسیم 20 2 pink|Sc اسکاندیم 21 3 blue|Ti تیتانیم 22 4 blue|V وانادیم 23 5 blue|Cr کروم 24 6 blue|Mn منگنز 25 7 blue|Fe آهن 26 8 blue|Co کبالت 27 9 blue|Ni نیکل 28 10 blue|Cu مس 29 11 blue|Zn روی 30 12 blue|Ga گالیم 31 13 yellow|Ge ژرمانیم 32 14 yellow|As آرسنیک 33 15 yellow|Se سلنیوم 34 16 yellow|Br بروم 35 17 yellow|Kr کریپتون 36 18 yellow|Rb روبیدیم 37 1 pink|Sr استرانسیم 38 2 pink|Y ایتریم 39 3 blue|Zr زیرکونیوم 40 4 blue|Nb نیوبیوم 41 5 blue|Mo مولیبدن 42 6 blue|Tc تکنسیم 43 7 blue|Ru روتنیم 44 8 blue|Rh رودیم 45 9 blue|Pd پالادیم 46 10 blue|Ag نقره 47 11 blue|Cd کادمیم 48 12 blue|In ایندیم 49 13 yellow|Sn قلع 50 14 yellow|Sb آنتیموان 51 15 yellow|Te تلوریم 52 16 yellow|I ید 53 17 yellow|Xe زنون 54 18 yellow|Cs سزیم 55 1 pink|Ba باریم 56 2 pink|La لانتان 57 3 green|Ce سریم 58 4 green|Pr پرازئودیمیم 59 5 green|Nd نئودیمیم 60 6 green|Pm پرومتیم 61 7 green|Sm ساماریم 62 8 green|Eu یوروپیم 63 9 green|Gd گادولینیم 64 10 green|Tb تربیم 65 11 green|Dy دیسپروزیم 66 12 green|Ho هولمیم 67 13 green|Er اربیم 68 14 green|Tm تولیم 69 15 green|Yb ایتربیم 70 16 green|Lu لوتتیم 71 3 blue|Hf هافنیم 72 4 blue|Ta تانتال 73 5 blue|W تنگستن 74 6 blue|Re رنیوم 75 7 blue|Os اسمیم 76 8 blue|Ir ایریدیم 77 9 blue|Pt پلاتین 78 10 blue|Au طلا 79 11 blue|Hg جیوه 80 12 blue|Tl تالیم 81 13 yellow|Pb سرب 82 14 yellow|Bi بیسموت 83 15 yellow|Po پولونیم 84 16 yellow|At آستاتین 85 17 yellow|Rn رادون 86 18 yellow|Fr فرانسیم 87 1 pink|Ra رادیم 88 2 pink|Ac اکتینیم 89 3 green|Th توریم 90 4 green|Pa پروتاکتینیم 91 5 green|U اورانیوم 92 6 green|Np نپتونیم 93 7 green|Pu پلوتونیم 94 8 green|Am آمریکیم 95 9 green|Cm کوریوم 96 10 green|Bk برکلیم 97 11 green|Cf کالیفرنیم 98 12 green|Es اینشتینیم 99 13 green|Fm فرمیم 100 14 green|Md مندلیفیم 101 15 green|No نوبلیم 102 16 green|Lr لارنسیم 103 3 blue|Rf رادرفوردیم 104 4 blue|Db دوبنیم 105 5 blue|Sg سیبورگیم 106 6 blue|Bh بوهریم 107 7 blue|Hs هاسیم 108 8 blue|Mt مایتنریم 109 9 blue|Ds دارمشتادیم 110 10 blue|Rg رونتگنیم 111 11 blue|Cn کوپرنیسیم 112 12 blue|Nh نیهونیوم 113 13 yellow|Fl فلروویوم 114 14 yellow|Mc مسکوویم 115 15 yellow|Lv لیورموریم 116 16 yellow|Ts تنسین 117 17 yellow|Og اوگانسون 118 18 yellow`.split('|').map(x=>{let [symbol,name,number,period,col]=x.split(' ');return{symbol,name,number:+number,period:+period,col}});
+    raw.find(e=>e.number===2).period=18;
+    const byNumber=Object.fromEntries(raw.map(e=>[e.number,e])), table=document.querySelector('#table'); let points=0,mode='explore',sound=true;
+    const fa=n=>n.toLocaleString('fa-IR');
+    function cell(e,period){let el=document.createElement('div');el.className=`element ${e.col}`;el.style.gridColumn=e.period+1;el.style.gridRow=period;el.title=`${e.name} — عدد اتمی ${fa(e.number)}`;el.innerHTML=`<span class="number">${e.number}</span><span class="symbol">${e.symbol}</span><span class="name">${e.name}</span>`;el.tabIndex=0;el.onclick=()=>mode==='finder'?findElement(e,el):showInfo(e);if(mode==='finder')el.classList.add('face-down');return el}
+    function build(){table.innerHTML='';let corner=document.createElement('div');corner.className='corner-label';corner.style.gridColumn=1;corner.style.gridRow='1/3';corner.innerHTML='<span>Group <span class="arrow-right">➜</span></span><span>Period<br>⇣</span>';table.append(corner);table.append(...Array.from({length:18},(_,i)=>{let x=document.createElement('div');x.className='group';x.style.gridColumn=i+2;x.style.gridRow=1;x.textContent=i+1;return x}));for(let p=1;p<=7;p++){let x=document.createElement('div');x.className='period';x.style.gridColumn=1;x.style.gridRow=p+1;x.textContent=p;table.append(x)}let labeledLa=false,labeledAc=false;raw.forEach(e=>{let p=e.number<=2?1:e.number<=10?2:e.number<=18?3:e.number<=36?4:e.number<=54?5:e.number<=86?6:7;if(e.number===57||e.number===89){let star=document.createElement('div');star.className='placeholder';star.style.gridColumn=3;star.style.gridRow=p+1;star.textContent=e.number===57?'*':'**';table.append(star)}if(e.number>=57&&e.number<=70||e.number>=89&&e.number<=102){let row=e.number>=89?10:9;if(row===9&&!labeledLa){labeledLa=true;let lab=document.createElement('div');lab.className='series-label';lab.style.gridRow=9;lab.style.marginTop='14px';lab.textContent='*';table.append(lab)}if(row===10&&!labeledAc){labeledAc=true;let lab=document.createElement('div');lab.className='series-label';lab.style.gridRow=10;lab.textContent='**';table.append(lab)}let series=document.createElement('div');series.className='element green';series.style.gridColumn=e.number-(e.number>=89?86:54)+1;series.style.gridRow=row;if(row===9)series.style.marginTop='14px';series.innerHTML=`<span class="number">${e.number}</span><span class="symbol">${e.symbol}</span><span class="name">${e.name}</span>`;series.title=e.name;series.onclick=()=>mode==='finder'?findElement(e,series):showInfo(e);if(mode==='finder')series.classList.add('face-down');table.append(series)}else table.append(cell(e,p+1))})}
+    function showInfo(e){if(mode!=='explore')return; document.querySelector('#panel').classList.add('show');document.querySelector('#panel-title').textContent=`${e.name} (${e.symbol})`;document.querySelector('#panel-desc').textContent=`عدد اتمی: ${fa(e.number)}  •  برای یادگیری بهتر، این عنصر را در جایگاهش در جدول پیدا کنید.`;document.querySelector('#game').innerHTML='';}
+    const tunes={taylor:[523.25,587.33,659.25,783.99,659.25,587.33,659.25],adele:[392.00,440.00,493.88,523.25,587.33,523.25,440.00],star:[659.25,830.61,987.77,1046.50,987.77,830.61,1046.50]};
+    function playSynth(){let ctx=new (window.AudioContext||window.webkitAudioContext)(),voice=document.querySelector('#singer').value,notes=tunes[voice]||tunes.taylor,wave=voice==='adele'?'triangle':voice==='star'?'square':'sine',t=ctx.currentTime;notes.forEach(freq=>{let o=ctx.createOscillator(),g=ctx.createGain();o.type=wave;o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.17);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.2);t+=.15})}
+    // آهنگ‌ها را خودکار از پوشهٔ songs/ همین مخزن گیت‌هاب می‌خواند — هر اسمی که فایل داشته باشد مهم نیست
+    const SONGS_PATH='songs';
+    function detectRepoInfo(){let host=location.hostname;if(!host.endsWith('.github.io'))return null;let owner=host.split('.')[0],parts=location.pathname.split('/').filter(Boolean),repo=parts.length?parts[0]:`${owner}.github.io`;return{owner,repo}}
+    let songList=[],songListLoaded=false;
+    async function loadSongList(){songListLoaded=true;try{let info=detectRepoInfo();if(!info)return;let res=await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/contents/${SONGS_PATH}`);if(!res.ok)return;let files=await res.json();if(!Array.isArray(files))return;songList=files.filter(f=>f.type==='file'&&/\.(mp3|ogg|wav|m4a|aac)$/i.test(f.name)).map(f=>f.download_url)}catch(e){/* بی‌صدا شکست می‌خورد و به ملودی جایگزین می‌رود */}}
+    loadSongList();
+    let currentAudio=null;
+    function stopCurrentAudio(){if(currentAudio){currentAudio.pause();currentAudio=null}}
+    function playRandomSong(){stopCurrentAudio();if(!songList.length){playSynth();return}let url=songList[Math.floor(Math.random()*songList.length)],audio=new Audio(url);audio.volume=.6;currentAudio=audio;audio.play().then(()=>{setTimeout(()=>{if(currentAudio===audio){audio.pause();currentAudio=null}},8000)}).catch(()=>{playSynth()})}
+    function reward(){points++;document.querySelector('#score').textContent=fa(points);if(sound)playRandomSong();toast('آفرین! یک قطعه موسیقی پاداش برایت پخش شد 🎵')}
+    function toast(t){let x=document.querySelector('#toast');x.textContent=t;x.classList.add('visible');setTimeout(()=>x.classList.remove('visible'),1800)}
+    function findElement(e,el){el.classList.remove('face-down');el.innerHTML=`<span class="number">${fa(e.number)}</span><span class="symbol">${e.symbol}</span><span class="name">${e.name}</span>`;if(e.number===finderTarget.number){el.classList.add('success');reward();document.querySelector('#panel-desc').textContent='آفرین! عنصر را پیدا کردی؛ سؤال بعدی آماده می‌شود.';setTimeout(()=>{build();finderRound()},1100)}else{el.classList.add('wrong');el.title='این عنصر پاسخ درست نیست؛ همچنان قرمز باقی می‌ماند.'}}
+    function finderRound(){finderTarget=raw[Math.floor(Math.random()*raw.length)];document.querySelector('#panel-title').textContent='عنصریاب';document.querySelector('#panel-desc').textContent=`عنصر «${finderTarget.name}» را در جدول پیدا کن و روی کارت آن بزن.`}
+    let finderTarget;
+    function game(){let panel=document.querySelector('#panel'),game=document.querySelector('#game');panel.classList.add('show');game.innerHTML='';if(mode==='finder'){document.querySelector('#panel-title').textContent='عنصریاب';document.querySelector('#panel-desc').textContent='کارت‌ها پشت‌ورو شدند؛ عنصر خواسته‌شده را در جدول پیدا کن.';finderRound();build();return}let e=raw[Math.floor(Math.random()*raw.length)],choices=[e];while(choices.length<3){let x=raw[Math.floor(Math.random()*raw.length)];if(!choices.includes(x))choices.push(x)}choices.sort(()=>Math.random()-.5);document.querySelector('#panel-title').textContent='جای عنصر را حدس بزن';document.querySelector('#panel-desc').textContent='عدد اتمی را ببین و نماد درست را انتخاب کن.';game.innerHTML=`<div class="quiz"><div class="question">عنصر با عدد اتمی ${fa(e.number)} کدام است؟</div><div class="choices">${choices.map(x=>`<button class="choice" data-n="${x.number}">${x.symbol}</button>`).join('')}</div><div class="feedback"></div></div>`;game.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{let ok=+b.dataset.n===e.number;b.parentNode.nextElementSibling.textContent=ok?'عالی بود! 🎉':'یک بار دیگر فکر کن';b.parentNode.nextElementSibling.className=`feedback ${ok?'success':'error'}`;if(ok){reward();setTimeout(game,900)}})}
+    document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;if(mode!=='explore'){game()}else{document.querySelector('#panel').classList.remove('show');build()}});document.querySelector('#sound').onclick=()=>{sound=!sound;document.querySelector('#sound').textContent=sound?'🔊 صدای پاداش: روشن':'🔇 صدای پاداش: خاموش';if(!sound)stopCurrentAudio()};build();
+    if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+  </script>
+</body>
+</html>
