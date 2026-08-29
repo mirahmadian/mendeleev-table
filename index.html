@@ -94,6 +94,7 @@
   <div class="player" id="player">
     <div class="player-info"><span class="player-icon" id="playerIcon">🎵</span><span class="player-status" id="playerStatus">در حال آماده‌سازی آهنگ پاداش...</span></div>
     <div class="player-controls">
+      <button id="volDownBtn" class="secondary" title="کاهش صدا">🔉</button>
       <button id="replayBtn" class="secondary" title="از اول">⟲</button>
       <button id="playPauseBtn" title="پخش/توقف">⏸</button>
       <button id="closePlayerBtn" class="secondary" title="بستن">✕</button>
@@ -109,16 +110,31 @@
     function showInfo(e){if(mode!=='explore')return; document.querySelector('#panel').classList.add('show');document.querySelector('#panel-title').textContent=`${e.name} (${e.symbol})`;document.querySelector('#panel-desc').textContent=`عدد اتمی: ${fa(e.number)}  •  برای یادگیری بهتر، این عنصر را در جایگاهش در جدول پیدا کنید.`;document.querySelector('#game').innerHTML='';}
     const tunes=[[523.25,587.33,659.25,783.99,659.25,587.33,659.25],[392.00,440.00,493.88,523.25,587.33,523.25,440.00],[659.25,830.61,987.77,1046.50,987.77,830.61,1046.50]];
     const waves=['sine','triangle','square'];
-    function playSynth(){let ctx=new (window.AudioContext||window.webkitAudioContext)(),notes=tunes[Math.floor(Math.random()*tunes.length)],wave=waves[Math.floor(Math.random()*waves.length)],t=ctx.currentTime;notes.forEach(freq=>{let o=ctx.createOscillator(),g=ctx.createGain();o.type=wave;o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.17);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.2);t+=.15})}
+    function playSynth(){let ctx=new (window.AudioContext||window.webkitAudioContext)(),notes=tunes[Math.floor(Math.random()*tunes.length)],wave=waves[Math.floor(Math.random()*waves.length)],peak=.16*(typeof currentVolume==='function'?currentVolume():1),t=ctx.currentTime;if(peak<=0)return;notes.forEach(freq=>{let o=ctx.createOscillator(),g=ctx.createGain();o.type=wave;o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.17);o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+.2);t+=.15})}
     // آهنگ‌ها را خودکار از پوشهٔ songs/ همین مخزن گیت‌هاب می‌خواند — هر اسمی که فایل داشته باشد مهم نیست
+    // اگر داخل songs/ زیرپوشه‌های pink / blue / yellow / green باشد، متناسب با نوع عنصر (فلز قلیایی/واسطه/نافلز/لانتانید-اکتینید) از همان زیرپوشه پخش می‌شود
     const SONGS_PATH='songs';
     function detectRepoInfo(){let host=location.hostname;if(!host.endsWith('.github.io'))return null;let owner=host.split('.')[0],parts=location.pathname.split('/').filter(Boolean),repo=parts.length?parts[0]:`${owner}.github.io`;return{owner,repo}}
-    let songList=[];
-    async function loadSongList(){try{let info=detectRepoInfo();if(!info)return;let res=await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/contents/${SONGS_PATH}`);if(!res.ok)return;let files=await res.json();if(!Array.isArray(files))return;songList=files.filter(f=>f.type==='file'&&/\.(mp3|ogg|wav|m4a|aac)$/i.test(f.name)).map(f=>f.download_url)}catch(e){/* بی‌صدا شکست می‌خورد و به ملودی جایگزین می‌رود */}}
-    const songListPromise=loadSongList();
+    async function fetchDirFiles(path){try{let info=detectRepoInfo();if(!info)return[];let res=await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/contents/${path}`);if(!res.ok)return[];let items=await res.json();return Array.isArray(items)?items:[]}catch(e){return[]}}
+    const AUDIO_RE=/\.(mp3|ogg|wav|m4a|aac)$/i;
+    let generalSongs=[],songsByCategory={},lastSongUrl=null;
+    async function loadAllSongs(){
+      let items=await fetchDirFiles(SONGS_PATH);
+      generalSongs=items.filter(f=>f.type==='file'&&AUDIO_RE.test(f.name)).map(f=>f.download_url);
+      let dirs=items.filter(f=>f.type==='dir');
+      await Promise.all(dirs.map(async d=>{let sub=await fetchDirFiles(`${SONGS_PATH}/${d.name}`);songsByCategory[d.name]=sub.filter(f=>f.type==='file'&&AUDIO_RE.test(f.name)).map(f=>f.download_url)}));
+    }
+    const songListPromise=loadAllSongs();
+    function pickRandomSong(pool){if(!pool||!pool.length)return null;if(pool.length===1)return pool[0];let choices=pool.filter(u=>u!==lastSongUrl);if(!choices.length)choices=pool;return choices[Math.floor(Math.random()*choices.length)]}
 
     let currentAudio=null;
-    const playerEl=document.querySelector('#player'),playerIcon=document.querySelector('#playerIcon'),playerStatus=document.querySelector('#playerStatus'),playPauseBtn=document.querySelector('#playPauseBtn'),replayBtn=document.querySelector('#replayBtn'),closePlayerBtn=document.querySelector('#closePlayerBtn');
+    const playerEl=document.querySelector('#player'),playerIcon=document.querySelector('#playerIcon'),playerStatus=document.querySelector('#playerStatus'),playPauseBtn=document.querySelector('#playPauseBtn'),replayBtn=document.querySelector('#replayBtn'),closePlayerBtn=document.querySelector('#closePlayerBtn'),volDownBtn=document.querySelector('#volDownBtn');
+    const VOLUME_STEPS=[0.9,0.6,0.35,0.15,0];
+    let volIdx=1;
+    function currentVolume(){return VOLUME_STEPS[volIdx]}
+    function updateVolumeIcon(){let v=currentVolume();volDownBtn.textContent=v===0?'🔇':v<0.35?'🔈':v<0.7?'🔉':'🔊';volDownBtn.title=`کاهش صدا (فعلی ${Math.round(v*100)}٪)`}
+    function cycleVolumeDown(){volIdx=(volIdx+1)%VOLUME_STEPS.length;if(currentAudio)currentAudio.volume=currentVolume();updateVolumeIcon()}
+    updateVolumeIcon();
     function setPlayerState(state){
       playerEl.classList.add('show');
       if(state==='preparing'){playerIcon.textContent='⏳';playerIcon.classList.add('spin');playerStatus.textContent='آهنگ پاداش در راه است، کمی صبر کن...';playPauseBtn.textContent='⏸';playPauseBtn.disabled=true}
@@ -128,13 +144,16 @@
     }
     function hidePlayer(){playerEl.classList.remove('show')}
     function stopCurrentAudio(){if(currentAudio){currentAudio.pause();currentAudio=null}hidePlayer()}
-    async function playRandomSong(){
+    async function playRandomSong(category){
       stopCurrentAudio();
       setPlayerState('preparing');
       await songListPromise;
-      if(!songList.length){hidePlayer();playSynth();return}
-      let url=songList[Math.floor(Math.random()*songList.length)],audio=new Audio(url);
-      audio.volume=.6;currentAudio=audio;
+      let pool=(category&&songsByCategory[category]&&songsByCategory[category].length)?songsByCategory[category]:generalSongs;
+      let url=pickRandomSong(pool);
+      if(!url){hidePlayer();playSynth();return}
+      lastSongUrl=url;
+      let audio=new Audio(url);
+      audio.volume=currentVolume();currentAudio=audio;
       audio.addEventListener('playing',()=>setPlayerState('playing'));
       audio.addEventListener('pause',()=>{if(!audio.ended)setPlayerState('paused')});
       audio.addEventListener('ended',()=>setPlayerState('ended'));
@@ -143,8 +162,9 @@
     playPauseBtn.onclick=()=>{if(!currentAudio)return;if(currentAudio.paused)currentAudio.play();else currentAudio.pause()};
     replayBtn.onclick=()=>{if(!currentAudio)return;currentAudio.currentTime=0;currentAudio.play()};
     closePlayerBtn.onclick=()=>stopCurrentAudio();
+    volDownBtn.onclick=cycleVolumeDown;
 
-    function reward(){points++;document.querySelector('#score').textContent=fa(points);toast(sound?'آفرین! امتیاز گرفتی 🎉 آهنگ پاداش هم در راه است':'آفرین! امتیاز گرفتی 🎉');if(sound)playRandomSong()}
+    function reward(category){points++;document.querySelector('#score').textContent=fa(points);toast(sound?'آفرین! امتیاز گرفتی 🎉 آهنگ پاداش هم در راه است':'آفرین! امتیاز گرفتی 🎉');if(sound)playRandomSong(category)}
     function toast(t){let x=document.querySelector('#toast');x.textContent=t;x.classList.add('visible');setTimeout(()=>x.classList.remove('visible'),1800)}
 
     // تلاش برای قفل خودکار چرخش صفحه به حالت افقی (فقط در برخی مرورگرهای اندروید هنگام نصب/تمام‌صفحه کار می‌کند)
@@ -152,7 +172,7 @@
     window.addEventListener('load',tryLockLandscape);
     document.addEventListener('click',tryLockLandscape,{once:true});
 
-    function findElement(e,el){el.classList.remove('face-down');el.innerHTML=`<span class="number">${fa(e.number)}</span><span class="symbol">${e.symbol}</span><span class="name">${e.name}</span>`;if(e.number===finderTarget.number){el.classList.add('success');reward();document.querySelector('#panel-desc').textContent='آفرین! عنصر را پیدا کردی؛ سؤال بعدی آماده می‌شود.';setTimeout(()=>{build();finderRound()},1100)}else{el.classList.add('wrong');el.title='این عنصر پاسخ درست نیست؛ همچنان قرمز باقی می‌ماند.'}}
+    function findElement(e,el){el.classList.remove('face-down');el.innerHTML=`<span class="number">${fa(e.number)}</span><span class="symbol">${e.symbol}</span><span class="name">${e.name}</span>`;if(e.number===finderTarget.number){el.classList.add('success');reward(e.col);document.querySelector('#panel-desc').textContent='آفرین! عنصر را پیدا کردی؛ سؤال بعدی آماده می‌شود.';setTimeout(()=>{build();finderRound()},1100)}else{el.classList.add('wrong');el.title='این عنصر پاسخ درست نیست؛ همچنان قرمز باقی می‌ماند.'}}
     function finderRound(){finderTarget=raw[Math.floor(Math.random()*raw.length)];document.querySelector('#panel-title').textContent='عنصریاب';document.querySelector('#panel-desc').textContent=`عنصر «${finderTarget.name}» را در جدول پیدا کن و روی کارت آن بزن.`}
     let finderTarget;
 
@@ -169,7 +189,7 @@
       else{prompt=`عنصر با عدد اتمی ${fa(e.number)} در کدام دوره (ردیف) جدول قرار دارد؟`;correct=`دوره ${fa(periodOf(e.number))}`;pool=()=>`دوره ${fa(periodOf(raw[Math.floor(Math.random()*raw.length)].number))}`}
       let choices=[correct],tries=0;while(choices.length<4&&tries<60){let c=pool();if(!choices.includes(c))choices.push(c);tries++}
       choices.sort(()=>Math.random()-.5);
-      return{prompt,correct,choices};
+      return{prompt,correct,choices,category:e.col};
     }
     function quizRound(){
       let gameEl=document.querySelector('#game'),q=buildQuestion();
@@ -187,7 +207,7 @@
           feedback.textContent=ok?'عالی بود! 🎉':`نه، جواب درست «${q.correct}» بود`;
           feedback.className=`feedback ${ok?'success':'error'}`;
           choicesEl.querySelectorAll('.choice').forEach(x=>x.disabled=true);
-          if(ok)reward();
+          if(ok)reward(q.category);
           setTimeout(quizRound,ok?1100:1600);
         };
         choicesEl.append(b);

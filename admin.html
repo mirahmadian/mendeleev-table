@@ -14,7 +14,7 @@
   .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px}
   label{display:block;font-size:13px;font-weight:bold;margin-bottom:6px}
-  input[type=text],input[type=password]{width:100%;font:inherit;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px;background:#fff;color:var(--ink)}
+  input[type=text],input[type=password],select{width:100%;font:inherit;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px;background:#fff;color:var(--ink)}
   .row{display:flex;gap:10px}
   .row>div{flex:1}
   .checkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:14px}
@@ -64,6 +64,18 @@
   </div>
 
   <div class="card">
+    <label>این آهنگ‌ها برای کدام نوع عنصر پخش شوند؟</label>
+    <select id="category">
+      <option value="">بدون دسته (برای همهٔ عنصرها، عمومی)</option>
+      <option value="pink">فلز قلیایی و قلیایی خاکی (صورتی)</option>
+      <option value="blue">فلز واسطه (آبی)</option>
+      <option value="yellow">نافلز و شبه‌فلز (زرد)</option>
+      <option value="green">لانتانید و اکتینید (سبز)</option>
+    </select>
+    <div class="hint">اگر دسته را انتخاب کنی، این آهنگ‌ها فقط وقتی پخش می‌شوند که کاربر دربارهٔ همان نوع عنصر جواب درست بدهد. اگر «بدون دسته» را بگذاری، آهنگ برای هر عنصری ممکن است پخش شود.</div>
+  </div>
+
+  <div class="card">
     <div class="drop" id="drop">فایل‌های صوتی را اینجا رها کن، یا برای انتخاب کلیک کن</div>
     <input type="file" id="fileInput" accept="audio/*" multiple>
     <div class="list" id="list"></div>
@@ -73,6 +85,7 @@
 
 <script>
 const $ = s => document.querySelector(s);
+const category = $('#category');
 const owner=$('#owner'), repo=$('#repo'), branch=$('#branch'), path=$('#path'), token=$('#token'), remember=$('#remember');
 
 // پیش‌فرض‌ها را از localStorage یا از آدرس همین صفحه (اگر روی GitHub Pages باشد) بردار
@@ -137,7 +150,8 @@ function fileToBase64(file){
 async function uploadOne(item, idx){
   const st = document.querySelector(`#st-${idx}`);
   const safeName = item.file.name.replace(/[^\w.\-]+/g,'-');
-  const apiUrl = `https://api.github.com/repos/${owner.value}/${repo.value}/contents/${path.value}/${safeName}`;
+  const folder = category.value ? `${path.value}/${category.value}` : path.value;
+  const apiUrl = `https://api.github.com/repos/${owner.value}/${repo.value}/contents/${folder}/${safeName}`;
   st.textContent='در حال آپلود...'; st.className='status pending';
   try{
     const base64 = await fileToBase64(item.file);
